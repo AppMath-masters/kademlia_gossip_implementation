@@ -36,12 +36,26 @@ class KademliaProtocol(RPCProtocol):
         self.welcome_if_new(source)
         return self.source_node.id
 
-    def rpc_store(self, sender, nodeid, key, value):
+    def rpc_store(self, sender, nodeid, name, key, value):
         source = Node(nodeid, sender[0], sender[1])
         self.welcome_if_new(source)
         log.debug("got a store request from %s, storing '%s'='%s'",
                   sender, key.hex(), value)
-        self.storage[key] = value
+        nearest = self.find_neighbors(source)
+        if not nearest:
+            log.warning("There are no known neighbors to set key %s", key.hex())
+            self.storage.download(name,value)
+            return False
+        neighbors = []
+        for n in nearest:
+            if n.distance_to(source)<=self.source_node.distance_to(source):
+                neighbors.append(n)
+        if len(neighbors)==0:
+            self.storage.download(name,value)
+            return False
+        else:
+            for n in neighbors:
+                self.store(n,name,key,value)
         return True
 
     def rpc_find_node(self, sender, nodeid, key):
