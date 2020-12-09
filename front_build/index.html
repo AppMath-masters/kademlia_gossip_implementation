@@ -4,7 +4,11 @@
   <script>
     function testRequest() {
       console.log('start')
-      fetch('http://localhost:8471', {method: 'POST'}).then((r)=>{console.log(r)})
+      fetch('http://localhost:8471',
+      	{method: 'POST',
+      	 headers: {'Content-Type': 'application/json'},
+      	  body: JSON.stringify({'id': '11', 'type': 'type1'})
+      	}).then((r)=>{console.log(r)})
     }
   </script>
 </head>

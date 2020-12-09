@@ -30,15 +30,18 @@ Client server
 """
 msg_queue = Queue() 
 response_queue = Queue()
+requests = dict()
+
 
 async def root_handler(request):
     return web.FileResponse('./front_build/index.html')
 
 
 async def request_handler(request):
-    msg_queue.put(request, block=False)
-    response = response_queue.get(block=True)
-    return response
+    print((await request.json())['type'])
+    #msg_queue.put(request, block=False)
+    #response = response_queue.get(block=True)
+    return web.Response()
 
 
 async def client_server(msg_q, response_q):
