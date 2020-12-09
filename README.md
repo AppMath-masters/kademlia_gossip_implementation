@@ -23,7 +23,7 @@ After receiving confirmation that the file was found, the requesting node sends 
 Thus, none of the nodes in the chain knows which node requested the file, and no one knows in which node the file is stored except for itself and its neighbors.
 
 #### Adding a file
-When a file is added to the system, the node communicates the identifier of this file to all of its neighbors, they retain this information.
+When a file is added to the system, the node evaluates the distance to the file ID of its ID and of its neighbors. If there is a neighbor whose identifier is closer to the file identifier than the one of the current node, the file is transferred to that neighbor, then the neighbor repeats this operation.
 
 #### Adding a node
 
@@ -37,7 +37,7 @@ If *m* is less than a predetermined maximum value *M*:
 - If node *O* has *k* neighbors, it sends this request to its neighbors with *m = m + 1*. Thus, as long as *m* is less than the predefined maximum value of *M*, the request propagates over the network using the Gossip protocol.
 
 If *m = M*:
-*O* chooses a random node *On* from the list of its neighbors and sends a request to that node with the requirement not to change its list of neighbors for some time. After receiving confirmation, *O* asks for status of *N*. If *N* has not yet been added to the system, it sends an affirmative answer. *O* sends a special request to *On*, *O* and *On* break the neighborhood with each other, and each of them adds *N* to the list of neighbors, *N*, in turn, does the same.
+*O* selects the node *On* from which the request was received and sends a request to that node with the requirement not to change its list of neighbors for some time. After receiving confirmation, *O* asks for status of *N*. If *N* has not yet been added to the system, it sends an affirmative answer. *O* sends a special request to *On*, *O* and *On* break the neighborhood with each other, and each of them adds *N* to the list of neighbors, *N*, in turn, does the same.
 
 Regardless of the answer *N*, the node *O* sends *On* a message that it can change the list of its neighbors.
 
