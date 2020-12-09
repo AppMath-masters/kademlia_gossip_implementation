@@ -1,75 +1,44 @@
-# Python Distributed Hash Table
-[![Build Status](https://secure.travis-ci.org/bmuller/kademlia.png?branch=master)](https://travis-ci.org/bmuller/kademlia)
-[![Docs Status](https://readthedocs.org/projects/kademlia/badge/?version=latest)](http://kademlia.readthedocs.org)
-[![Coverage Status](https://coveralls.io/repos/github/bmuller/twistar/badge.svg?branch=master)](https://coveralls.io/github/bmuller/twistar?branch=master)
+# Kademlia Gossip
 
-**Documentation can be found at [kademlia.readthedocs.org](http://kademlia.readthedocs.org/).**
+The repository contains a modified [implementation of Kademlia](https://github.com/bmuller/kademlia).
 
-This library is an asynchronous Python implementation of the [Kademlia distributed hash table](http://en.wikipedia.org/wiki/Kademlia).  It uses the [asyncio library](https://docs.python.org/3/library/asyncio.html) in Python 3 to provide asynchronous communication.  The nodes communicate using [RPC over UDP](https://github.com/bmuller/rpcudp) to communiate, meaning that it is capable of working behind a [NAT](http://en.wikipedia.org/wiki/Network_address_translation).
+The purpose of the modification is to reduce the number of IP-addresses of other nodes known to each node of the system as much as possible. The situation when a large number of third-party nodes become aware of the address of the current node is undesirable. In the original version of Kademlia, it is possible to find out the addresses of a fairly large number of nodes if you have an idea of the list of files stored in the system.
 
-This library aims to be as close to a reference implementation of the [Kademlia paper](http://pdos.csail.mit.edu/~petar/papers/maymounkov-kademlia-lncs.pdf) as possible.
+In this modification, the knowledge of a node about the system is limited to no more than *k* (*k > 1*) neighbors. This makes the network more anonymous, but at the same time increases the load on it. This feature introduces changes in the algorithms for processing almost all types of operations in the system.
 
-## Installation
+#### File Search Request
+Let's say node *A* wants to receive a file with a known identifier. It sends a find request to all of its neighbors. Further, this request is distributed through the system using the [Gossip protocol](https://en.wikipedia.org/wiki/Gossip_protocol#:~:text=A%20gossip%20protocol%20is%20a,all%20members%20of%20a%20group). The request contains a randomly generated identifier and id of the required file. Each node that receives this request retains information about the node it first received it from. Next, it checks if it or any of it's neighbors stores the requested file. If the required neighbor is found, this request is passed to it.
 
-```
-pip install kademlia
-```
+When a node receives a request to find a file stored in it, it sends a response with the same identifier to the node from which the request was received. It ignores further find requests with the same identifier. The node that received the answer retains where the response was received from and redirects it further to the node from which it itself received the find request with this identifier.
 
-## Usage
-*This assumes you have a working familiarity with [asyncio](https://docs.python.org/3/library/asyncio.html).*
+Information about the request passed through the node is stored for a certain time *T*.
 
-Assuming you want to connect to an existing network:
+Thus, a chain from the node that requested the file to the node in which this file is stored is formed, and in this chain, each node knows the IP-addresses of only two of its neighbors.
 
-```python
-import asyncio
-from kademlia.network import Server
 
-async def run():
-    # Create a node and start listening on port 5678
-    node = Server()
-    await node.listen(5678)
 
-    # Bootstrap the node by connecting to other known nodes, in this case
-    # replace 123.123.123.123 with the IP of another node and optionally
-    # give as many ip/port combos as you can for other nodes.
-    await node.bootstrap([("123.123.123.123", 5678)])
+#### Transferring a file to the requesting node
+After receiving confirmation that the file was found, the requesting node sends a request for receiving the file through the chain. So, if the chain is *A-B-C-D*, and A requests a file that is stored in *D*, then *D* will send the file to *C*, after that *C* will send it to *B*, which will send it to *A*. After receiving and sending the file, the node no longer stores information about this request. Node *A* sends requests for confirmation of the status along the chain at regular intervals. The node in the chain that currently has the file returns the response through the chain in the opposite direction. If *A* does not receive a response for a long time, that means that one of the nodes in the chain has been disconnected and the find request should be sent again.
 
-    # set a value for the key "my-key" on the network
-    await node.set("my-key", "my awesome value")
+Thus, none of the nodes in the chain knows which node requested the file, and no one knows in which node the file is stored except for itself and its neighbors.
 
-    # get the value associated with "my-key" from the network
-    result = await node.get("my-key")
-    print(result)
+#### Adding a file
+When a file is added to the system, the node communicates the identifier of this file to all of its neighbors, they retain this information.
 
-asyncio.run(run())
-```
+#### Adding a node
 
-## Initializing a Network
-If you're starting a new network from scratch, just omit the `node.bootstrap` call in the example above.  Then, bootstrap other nodes by connecting to the first node you started.
+To add a new node to the system (let's denote it as *N*), the IP-address of at least one node in the system must be known, let's denote this node *O*. Then the new node sends a special bootstrap request to the *O* node. The request contains the address of the new node, the randomly generated request identifier, and the number of nodes that have processed this request *m*. Initially *m = 0*.
 
-See the examples folder for a first node example that other nodes can bootstrap connect to and some code that gets and sets a key/value.
+Each time the node *O* receives this request, it performs the following sequence of actions:
 
-## Logging
-This library uses the standard [Python logging library](https://docs.python.org/3/library/logging.html).  To see debut output printed to STDOUT, for instance, use:
+If *m* is less than a predetermined maximum value *M*:
+- If node *O* has less than *k* neighbors at the time of receiving a request, it asks node *N* for its status. If *N* has not yet been added to the system, the two nodes add each other to their neighbor lists.
 
-```python
-import logging
+- If node *O* has *k* neighbors, it sends this request to its neighbors with *m = m + 1*. Thus, as long as *m* is less than the predefined maximum value of *M*, the request propagates over the network using the Gossip protocol.
 
-log = logging.getLogger('kademlia')
-log.setLevel(logging.DEBUG)
-log.addHandler(logging.StreamHandler())
-```
+If *m = M*:
+*O* chooses a random node *On* from the list of its neighbors and sends a request to that node with the requirement not to change its list of neighbors for some time. After receiving confirmation, *O* asks for status of *N*. If *N* has not yet been added to the system, it sends an affirmative answer. *O* sends a special request to *On*, *O* and *On* break the neighborhood with each other, and each of them adds *N* to the list of neighbors, *N*, in turn, does the same.
 
-## Running Tests
-To run tests:
+Regardless of the answer *N*, the node *O* sends *On* a message that it can change the list of its neighbors.
 
-```
-pip install -r dev-requirements.txt
-pytest
-```
-
-## Reporting Issues
-Please report all issues [on github](https://github.com/bmuller/kademlia/issues).
-
-## Fidelity to Original Paper
-The current implementation should be an accurate implementation of all aspects of the paper save one - in Section 2.3 there is the requirement that the original publisher of a key/value republish it every 24 hours.  This library does not do this (though you can easily do this manually).
+After being added to the system, a new node asks all of its neighbors for information about the files stored in them and saves it.
