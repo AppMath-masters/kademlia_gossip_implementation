@@ -1,6 +1,5 @@
 import logging
 import asyncio
-import time
 
 from kademlia.network import Server
 import threading
@@ -30,15 +29,23 @@ loop = asyncio.get_event_loop()
 Client server
 """
 msg_queue = Queue() 
+response_queue = Queue()
 
-async def handler(request):
-    return web.Response(text="Hello, world")
+async def root_handler(request):
+    return web.FileResponse('./front_build/index.html')
 
 
-async def client_server(out_q):
+async def request_handler(request):
+    msg_queue.put(request, block=False)
+    response = response_queue.get(block=True)
+    return response
+
+
+async def client_server(msg_q, response_q):
     
     app = web.Application()
-    app.add_routes([web.get('/', handler)])
+    app.add_routes([web.get('/', root_handler),
+                    web.post('/', request_handler)])
     
     runner = web.AppRunner(app)
     await runner.setup()
@@ -46,16 +53,18 @@ async def client_server(out_q):
     await asyncio.Event().wait()
 
 
-def run_async_client_server(out_q):
-    asyncio.run(client_server(out_q))
+def run_async_client_server(msg_q, response_q):
+    asyncio.run(client_server(msg_q, response_q))
 
-threading.Thread(target=run_async_client_server, args = (msg_queue, )).start()
+
+threading.Thread(target=run_async_client_server,
+                 args = (msg_queue, response_queue, )).start()
 
 
 """
 Kademlia server
 """
-async def node_server(in_q):
+async def node_server(msg_q, response_q):
     server = Server()
     loop.set_debug(True)
 
@@ -63,18 +72,20 @@ async def node_server(in_q):
     
     while True:
         try:
-            data = in_q.get(timeout=2)
+            data = msg_q.get(timeout=2)
             print(data)
+            response_q.put(web.Response(status=202))
 
         except:
             print("No data")
 
 
-def run_async_node_server(in_q):
-    asyncio.run(node_server(in_q))
+def run_async_node_server(msg_q, response_q):
+    asyncio.run(node_server(msg_q, response_q))
 
 
-threading.Thread(target=run_async_node_server, args = (msg_queue, )).start()
+threading.Thread(target=run_async_node_server,
+                 args = (msg_queue, response_queue, )).start()
 
 
 """
