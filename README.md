@@ -42,3 +42,7 @@ If *m = M*:
 Regardless of the answer *N*, the node *O* sends *On* a message that it can change the list of its neighbors.
 
 After being added to the system, a new node asks all of its neighbors for information about the files stored in them and saves it.
+
+## Client
+
+The repository contains a minimalistic client. It allows easy access to basic features like connecting to the system, adding or searching for a file. Use the command `python client.py` and open the specified port with a web browser.

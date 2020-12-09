@@ -43,6 +43,7 @@ async def request_handler(request):
 
 async def client_server(msg_q, response_q):
     
+    print("Running client on port: " + str(_front_port))
     app = web.Application()
     app.add_routes([web.get('/', root_handler),
                     web.post('/', request_handler)])
