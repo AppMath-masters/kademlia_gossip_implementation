@@ -7,9 +7,9 @@ The purpose of the modification is to reduce the number of IP-addresses of other
 In this modification, the knowledge of a node about the system is limited to no more than *k* (*k > 1*) neighbors. This makes the network more anonymous, but at the same time increases the load on it. This feature introduces changes in the algorithms for processing almost all types of operations in the system.
 
 #### File Search Request
-Let's say node *A* wants to receive a file with a known identifier. It sends a find request to all of its neighbors. Further, this request is distributed through the system using the [Gossip protocol](https://en.wikipedia.org/wiki/Gossip_protocol#:~:text=A%20gossip%20protocol%20is%20a,all%20members%20of%20a%20group). The request contains a randomly generated identifier and id of the required file. Each node that receives this request retains information about the node it first received it from. Next, it checks if it or any of it's neighbors stores the requested file. If the required neighbor is found, this request is passed to it.
+Let's say node *A* wants to receive a file with a known identifier. It sends a find request to all of its neighbors. Further, this request is distributed through the system using the [Gossip protocol](https://en.wikipedia.org/wiki/Gossip_protocol#:~:text=A%20gossip%20protocol%20is%20a,all%20members%20of%20a%20group). The request contains a randomly generated identifier and id of the required file. Each node that receives this request retains information about the node it first received it from. Next, it checks if it stores the requested file.
 
-When a node receives a request to find a file stored in it, it sends a response with the same identifier to the node from which the request was received. It ignores further find requests with the same identifier. The node that received the answer retains where the response was received from and redirects it further to the node from which it itself received the find request with this identifier.
+When a node receives a request to find a file that is stored in it, it sends a response with the same identifier to the node from which the request was received. It ignores further find requests with the same identifier. The node that received the answer retains where the response was received from and redirects it further to the node from which it itself received the find request with this identifier.
 
 Information about the request passed through the node is stored for a certain time *T*.
 
@@ -23,7 +23,7 @@ After receiving confirmation that the file was found, the requesting node sends 
 Thus, none of the nodes in the chain knows which node requested the file, and no one knows in which node the file is stored except for itself and its neighbors.
 
 #### Adding a file
-When a file is added to the system, the node evaluates the distance to the file ID of its ID and of its neighbors. If there is a neighbor whose identifier is closer to the file identifier than the one of the current node, the file is transferred to that neighbor, then the neighbor repeats this operation.
+When a file is added to the system, the node evaluates the distance to the file ID of its ID and of its neighbors. If there is a neighbor whose identifier is closer to the file identifier than the one of the current node, the file is transferred to that neighbor, then the neighbor repeats this operation. The process is similar to the original Kademlia.
 
 #### Adding a node
 
