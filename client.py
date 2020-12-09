@@ -23,33 +23,44 @@ log.setLevel(logging.DEBUG)
 
 
 loop = asyncio.get_event_loop()
-
+server = Server()
 
 """
 Client server
 """
-msg_queue = Queue() 
-response_queue = Queue()
-requests = dict()
+find_requests = dict()
 
 
 async def root_handler(request):
     return web.FileResponse('./front_build/index.html')
 
 
-async def request_handler(request):
-    print((await request.json())['type'])
-    #msg_queue.put(request, block=False)
-    #response = response_queue.get(block=True)
-    return web.Response()
+async def connect_handler(request):
+    data = await request.json()
+    ip = data['ip']
+    port = data['port']
+    """
+    """
+    return web.Response(status=204)
 
 
-async def client_server(msg_q, response_q):
+async def search_handler(request):
+    data = await request.json()
+    name = data['name']
+    _id = 1
+    """
+    """
+    return web.Response(headers={'Content-Type': 'application/json'},
+                        text=json.dumps({'id': str(_id)}))
+
+
+async def client_server():
     
     print("Running client on port: " + str(_front_port))
     app = web.Application()
     app.add_routes([web.get('/', root_handler),
-                    web.post('/', request_handler)])
+                    web.post('/connect', connect_handler),
+                    web.post('/search', search_handler)])
     
     runner = web.AppRunner(app)
     await runner.setup()
@@ -57,77 +68,26 @@ async def client_server(msg_q, response_q):
     await asyncio.Event().wait()
 
 
-def run_async_client_server(msg_q, response_q):
-    asyncio.run(client_server(msg_q, response_q))
+def run_async_client_server():
+    asyncio.run(client_server())
 
 
-threading.Thread(target=run_async_client_server,
-                 args = (msg_queue, response_queue, )).start()
+threading.Thread(target=run_async_client_server).start()
 
 
 """
 Kademlia server
 """
-async def node_server(msg_q, response_q):
-    server = Server()
+async def node_server():
     loop.set_debug(True)
 
     await server.listen(_node_port)
     
     while True:
-        try:
-            data = msg_q.get(timeout=2)
-            print(data)
-            response_q.put(web.Response(status=202))
-
-        except:
-            print("No data")
-
-
-def run_async_node_server(msg_q, response_q):
-    asyncio.run(node_server(msg_q, response_q))
-
-
-threading.Thread(target=run_async_node_server,
-                 args = (msg_queue, response_queue, )).start()
-
-
-"""
-def main_server():
-    server = Server()
-
-    loop.set_debug(True)
-    loop.run_until_complete(server.listen(8468))
-
-    try:
-        loop.run_forever()
-    except KeyboardInterrupt:
         pass
-    finally:
-        server.stop()
-        loop.close()
+
+def run_async_node_server():
+    asyncio.run(node_server())
 
 
-threading.Thread(target=main_server).start()
-
-time.sleep(5)
-
-
-async def run_set():
-    server = Server()
-    await server.listen(8470)
-    bootstrap_node = ("127.0.0.1", 8468)
-    await server.bootstrap([bootstrap_node])
-    await server.set("test_key", "Hello")
-    while True:
-        pass
-    # server.stop()
-
-
-def run_async_set():
-    asyncio.run(run_set())
-
-
-threading.Thread(target=run_async_set).start()
-time.sleep(3)
-"""
+threading.Thread(target=run_async_node_server).start()
