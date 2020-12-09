@@ -81,7 +81,7 @@ class Server:
         storing them if this server is going down for a while.  When it comes
         back up, the list of nodes can be used to bootstrap.
         """
-        neighbors = self.protocol.router.find_neighbors(self.node)
+        neighbors = self.protocol.find_neighbors(self.node)
         return [tuple(n)[-2:] for n in neighbors]
 
     def build_unique_code(self):
@@ -114,18 +114,25 @@ class Server:
             :class:`None` if not found, the value otherwise.
         """
         log.info("Looking up key %s", key)
+        request_id = self.build_unique_code()
         dkey = digest(key)
         # if this node has it, return it
         if self.storage.get(dkey) is not None:
             return self.storage.get(dkey)
         node = Node(dkey)
-        nearest = self.protocol.router.find_neighbors(node)
-        if not nearest:
+        neighbours = self.protocol.find_neighbors(node)
+        closer = []
+        my_distance = node.distance_to(self.node)
+        for neighbour in neighbours.values():
+            if neighbour.distance_to(node) < my_distance:
+                closer.append(neighbour)
+
+        if not closer:
             log.warning("There are no known neighbors to get key %s", key)
             return None
-        spider = ValueSpiderCrawl(self.protocol, node, nearest,
-                                  self.ksize, self.alpha)
-        return await spider.find()
+
+        self.protocol.call_find(closer, key, request_id)
+
 
     async def set(self, key, value):
         """

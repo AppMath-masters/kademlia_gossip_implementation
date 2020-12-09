@@ -16,6 +16,7 @@ class GossipProtocol(RPCProtocol):
         self.k = 1
         self.M = 3
         self.history_of_request_ids = set()
+        self.file_stransfer_request_ids = set()
 
     async def call_connect(self, address, request_id):
         self.connect(address, self.source_node.id,
@@ -68,6 +69,7 @@ class GossipProtocol(RPCProtocol):
 
         else:
             self.accept_connection(node_id, node_address)
+        self.history_of_request_ids.add(request_id)
 
         return sender
 
@@ -94,26 +96,6 @@ class GossipProtocol(RPCProtocol):
         neighbors = self.router.find_neighbors(node, exclude=source)
         return list(map(tuple, neighbors))
 
-    def rpc_find_value(self, sender, nodeid, key):
-        source = Node(nodeid, sender[0], sender[1])
-        self.welcome_if_new(source)
-        value = self.storage.get(key, None)
-        if value is None:
-            return self.rpc_find_node(sender, nodeid, key)
-        return {'value': value}
-
-    async def call_find_node(self, node_to_ask, node_to_find):
-        address = (node_to_ask.ip, node_to_ask.port)
-        result = await self.find_node(address, self.source_node.id,
-                                      node_to_find.id)
-        return self.handle_call_response(result, node_to_ask)
-
-    async def call_find_value(self, node_to_ask, node_to_find):
-        address = (node_to_ask.ip, node_to_ask.port)
-        result = await self.find_value(address, self.source_node.id,
-                                       node_to_find.id)
-        return self.handle_call_response(result, node_to_ask)
-
     async def call_ping(self, node_to_ask):
         address = (node_to_ask.ip, node_to_ask.port)
         result = await self.ping(address, self.source_node.id)
@@ -123,6 +105,15 @@ class GossipProtocol(RPCProtocol):
         address = (node_to_ask.ip, node_to_ask.port)
         result = await self.store(address, self.source_node.id, key, value)
         return self.handle_call_response(result, node_to_ask)
+
+    def rpc_find(self, sender, key, request_id):
+        # if storage.find_file(key):
+        pass
+
+    async def call_find(self, closer_nodes, key, request_id):
+        for node in closer_nodes:
+            self.find((node.ip, node.port), key, request_id)
+
 
     def _is_new_node(self, node):
         return self.neighbours.get(node.id, None) is not None
