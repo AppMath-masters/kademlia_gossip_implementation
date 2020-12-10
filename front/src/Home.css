@@ -1,0 +1,163 @@
+.select-search {
+    width: 300px;
+    
+    font-family: Candara;
+    box-sizing: border-box;
+    text-align: center !important;
+  }
+  
+  .select-search *,
+  .select-search *::after,
+  .select-search *::before {
+    box-sizing: inherit;
+  }
+  
+  /**
+  * Value wrapper
+  */
+  .select-search__value {
+    position: relative;
+    z-index: 1;
+  }
+  
+  .select-search__value::after {
+    content: '';
+    display: inline-block;
+    position: absolute;
+    top: calc(50% - 9px);
+    right: 19px;
+    width: 11px;
+    height: 11px;
+  }
+  
+  /**
+  * Input
+  */
+  .select-search__input {
+    display: block;
+    height: 36px;
+    width: 100%;
+    padding: 0 16px;
+    background: #fff;
+    border: 1px solid transparent;
+    box-shadow: 0 .0625rem .125rem rgba(0, 0, 0, 0.15);
+    border-radius: 3px;
+    outline: none;
+    font-family: Candara;
+    font-size: 14px;
+    text-align: left;
+    text-overflow: ellipsis;
+    line-height: 36px;
+    -webkit-appearance: none;
+  }
+  
+  .select-search__select {
+    background: #fff;
+    box-shadow: 0 .0625rem .125rem rgba(0, 0, 0, 0.15);
+  }
+  
+  /**
+  * Options
+  */
+  .select-search__options {
+    list-style: none;
+  }
+  
+  /**
+  * Option row
+  */
+  .select-search__row:not(:first-child) {
+    border-top: 1px solid #eee;
+  }
+  
+  /**
+  * Option
+  */
+  .select-search__option {
+    display: block;
+    height: 36px;
+    width: 100%;
+    padding: 0 16px;
+    background: #fff;
+    border: none;
+    outline: none;
+    font-family: Candara;
+    font-size: 14px;
+    text-align: left;
+    cursor: pointer;
+  }
+  
+  .select-search--multiple .select-search__option {
+    height: 48px;
+  }
+  
+  .select-search__option.is-selected {
+    background: #17a2b8;
+    color: #fff;
+  }
+  
+  .select-search__option.is-highlighted,
+  .select-search__option:not(.is-selected):hover {
+    background: rgba(47, 199, 204, 0.1);
+  }
+  
+  .select-search__option.is-highlighted.is-selected,
+  .select-search__option.is-selected:hover {
+    background: #0897ad;
+    color: #fff;
+  }
+
+  .table_info{
+    font-family: Candara;
+  }
+
+  table {
+    margin: 20px auto 40px auto;
+    border-collapse: collapse;
+    border: 1px solid #ddd;
+    width: 75%;
+  }
+  
+  th, td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: center;
+  }
+
+  thead{
+    text-align: center;
+  }
+
+  a{
+    font-family: Candara;
+    color: #17a2b8;
+  }
+
+  .btn-outline-info, h3{
+    font-family: Candara;
+  }
+
+  .link-css{
+    font-family: Candara;
+    color: #17a2b8;
+  }
+
+  .div-center{
+    text-align: center;
+    margin-left: auto;
+    margin-right: auto;
+    display: block;
+    font-family: Candara;
+  }
+
+  .btn-toolbar{
+    width: auto;
+    margin-right: 0.5rem !important;
+    margin-top: 0.5rem;
+    display: block !important;
+}
+
+form{
+  font-family: Candara;
+}
+  
