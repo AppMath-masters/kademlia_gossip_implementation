@@ -98,7 +98,7 @@ async def client_server():
                     web.get('/neighbors', neighbors_handler),
                     web.post('/add', add_handler),
                     web.get('/content', content_handler),
-                    web.get('/findresults', find_results_handler)
+                    web.post('/findresults', find_results_handler)
                     ])
     
     runner = web.AppRunner(app)

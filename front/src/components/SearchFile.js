@@ -20,7 +20,7 @@ export default function SearchFile (){
 
   	const requestSpamer = () => {
       fetch('http://localhost:8471/findresults', {
-    		method: 'GET',
+    		method: 'POST',
     		headers: {
       		'Content-Type': 'application/json'
     		},
