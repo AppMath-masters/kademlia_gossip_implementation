@@ -1,6 +1,7 @@
 import logging
 import asyncio
 import sys
+import time
 
 from kademlia.network import Server
 
@@ -23,6 +24,11 @@ def run():
     loop.run_until_complete(server.listen(8469))
     bootstrap_node = ("127.0.0.1", 8468)
     loop.run_until_complete(server.bootstrap(bootstrap_node))
+    id = loop.run_until_complete(server.get("File.txt"))
+    print(id)
+    time.sleep(10)
+    print(server.get_results_by_search_ids([id]))
+
     try:
         loop.run_forever()
     except KeyboardInterrupt:

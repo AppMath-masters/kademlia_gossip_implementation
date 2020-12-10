@@ -4,7 +4,7 @@ from rpcudp.protocol import RPCProtocol
 
 from kademlia.file_data import FileData
 from kademlia.node import Node
-from storage import Storage
+from kademlia.storage import Storage
 import random
 
 log = logging.getLogger(__name__)  # pylint: disable=invalid-name
@@ -15,7 +15,7 @@ class GossipProtocol(RPCProtocol):
         RPCProtocol.__init__(self)
         self.neighbours = dict()
         self.source_node = source_node
-        self.k = 1
+        self.k = 10
         self.M = 3
         self.storage = Storage()
         self.history_of_request_ids = set()
@@ -23,10 +23,9 @@ class GossipProtocol(RPCProtocol):
         self.history_of_find_file_request_ids = dict()
         self.history_of_find_file_request_ids_from_this_node = dict()
 
-
-async def call_connect(self, address, request_id):
-        self.connect(address, self.source_node.id,
-                     self.source_node.id, request_id, 0)
+    async def call_connect(self, address, request_id):
+        await self.connect(address, self.source_node.id,
+                           self.source_node.id, request_id, 0)
 
     def accept_connection(self, node_id, node_address):
         log.debug("Accept connection from node %s with id %s", str(node_address), str(node_id))
@@ -85,12 +84,32 @@ async def call_connect(self, address, request_id):
     def rpc_ping(self, sender, nodeid):
         return self.source_node.id
 
-    def rpc_store(self, sender, nodeid, key, value):
+    def get_results_by_ids(self, ids):
+        result = []
+        for id in ids:
+            result.append(self.history_of_find_file_request_ids_from_this_node[id])
+        return result
+
+    def rpc_store(self, sender, nodeid, name, key, value):
         source = Node(nodeid, sender[0], sender[1])
         self.welcome_if_new(source)
         log.debug("got a store request from %s, storing '%s'='%s'",
                   sender, key.hex(), value)
-        self.storage[key] = value
+        nearest = self.find_neighbors(source)
+        if not nearest:
+            log.warning("There are no known neighbors to set key %s", key.hex())
+            self.storage.download(name,value)
+            return False
+        neighbors = []
+        for n in nearest:
+            if n.distance_to(source)<=self.source_node.distance_to(source):
+                neighbors.append(n)
+        if len(neighbors)==0:
+            self.storage.download(name,value)
+            return False
+        else:
+            for n in neighbors:
+                self.store(n,name,key,value)
         return True
 
     def rpc_find_node(self, sender, nodeid, key):
@@ -102,17 +121,15 @@ async def call_connect(self, address, request_id):
         neighbors = self.router.find_neighbors(node, exclude=source)
         return list(map(tuple, neighbors))
 
-
-
     async def call_ping(self, node_to_ask):
         address = (node_to_ask.ip, node_to_ask.port)
         result = await self.ping(address, self.source_node.id)
         return self.handle_call_response(result, node_to_ask)
 
-    async def call_store(self, node_to_ask, key, value):
+    async def call_store(self, node_to_ask, name, key, value):
         address = (node_to_ask.ip, node_to_ask.port)
-        result = await self.store(address, self.source_node.id, key, value)
-        return self.handle_call_response(result, node_to_ask)
+        result = await self.store(address, self.source_node.id, name, key, value)
+        # return self.handle_call_response(result, node_to_ask)
 
     def rpc_accept_file(self, sender, file_content, file_name, request_id):
         if not self.file_transfer_request_ids.__contains__(request_id):
@@ -123,7 +140,7 @@ async def call_connect(self, address, request_id):
             else:
                 path = self.storage.download(file_name, file_content)
                 self.history_of_find_file_request_ids_from_this_node[request_id] \
-                    = FileData(file_name, path)
+                    = FileData(request_id, file_name, path)
 
     def send_file_to_requester(self, request_id, file_content, address):
         self.accept_file(address, file_content, request_id)

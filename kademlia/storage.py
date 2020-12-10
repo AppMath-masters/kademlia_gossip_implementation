@@ -54,6 +54,14 @@ class Storage():
                 return True
         return False
 
+    def get_path(self, name):
+        mypath = os.getcwd() + "/Storage/"
+        files = [f for f in os.listdir(mypath) if os.path.isfile(os.path.join(mypath, f))]
+        for f in files:
+            if f == name:
+                return mypath + name
+        return None
+
     def get_all(self):
         path = os.getcwd()+"/Storage/"
         files = [f for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]
@@ -61,4 +69,3 @@ class Storage():
         for f in files:
             dfiles.append({"name":f,"path":path+f})
         return dfiles
-            

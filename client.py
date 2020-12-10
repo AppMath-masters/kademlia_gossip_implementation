@@ -66,6 +66,7 @@ async def add_handler(request):
     data = await request.json()
     name = data['name']
     path = data['path']
+    await server.set(name, path)
     """
     """
     return web.Response()
