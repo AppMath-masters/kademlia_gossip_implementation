@@ -52,15 +52,58 @@ async def search_handler(request):
     """
     return web.Response(headers={'Content-Type': 'application/json'},
                         text=json.dumps({'id': str(_id)}))
+    
+    
+async def neighbors_handler(request):
+    """
+    """
+    res = [{'id': '1', 'ip': '2', 'port': '3'} for i in range(3)]
+    return web.Response(headers={'Content-Type': 'application/json'},
+                        text=json.dumps(res))
 
 
+async def add_handler(request):
+    data = await request.json()
+    name = data['name']
+    path = data['path']
+    """
+    """
+    return web.Response()
+
+
+async def find_results_handler(request):
+    data = await request.json()
+    ids = data['ids']
+    """
+    """
+    res = [{'id': '1', 'name': '2', 'path': '3'} for i in range(3)]
+    return web.Response(headers={'Content-Type': 'application/json'},
+                        text=json.dumps(res))
+
+
+async def content_handler(request):
+    """
+    """
+    res = [{'name': '1', 'path': '2'} for i in range(3)]
+    return web.Response(headers={'Content-Type': 'application/json'},
+                        text=json.dumps(res))
+
+
+"""
+Client server
+"""
 async def client_server():
     
     print("Running client on port: " + str(_front_port))
     app = web.Application()
     app.add_routes([web.get('/', root_handler),
                     web.post('/connect', connect_handler),
-                    web.post('/search', search_handler)])
+                    web.post('/search', search_handler),
+                    web.post('/neighbors', neighbors_handler),
+                    web.post('/add', add_handler),
+                    web.get('/content', content_handler),
+                    web.post('/findresults', find_results_handler)
+                    ])
     
     runner = web.AppRunner(app)
     await runner.setup()
