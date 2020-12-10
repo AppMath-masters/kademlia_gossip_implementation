@@ -1,4 +1,4 @@
-import React, { Component, useState, useEffect, useLayoutEffect} from 'react';
+import React, { Component, useState, useEffect, useLayoutEffect, useRef} from 'react';
 import { Button, Grid, Col, ControlLabel, Form, FormGroup } from 'react-bootstrap';
 import { Input} from 'reactstrap';
 import axios from 'axios';
@@ -7,10 +7,42 @@ export default function SearchFile (){
     const [name, setName] = useState('');
     const [message, setMessage] = useState('');
     const port = sessionStorage.getItem('server_port')
-    const [id_array, setArray] = useState('');
-    const [file_id, setFile_id] = useState('');
+    
+    const id_array = useRef([]);
+    // const [file_id, setFile_id] = useState('');
 
+		useEffect(() => {
+      let stored = sessionStorage.getItem('id_array');
+      if (stored) {
+        id_array.current = stored;
+      }
+    }, []);
 
+  	const requestSpamer = () => {
+      fetch('http://localhost:8471/findresults', {
+    		method: 'GET',
+    		headers: {
+      		'Content-Type': 'application/json'
+    		},
+    		body: JSON.stringify({
+      		'ids': id_array.current
+    		})
+  		}).then(response => {
+        for (let item in response.data) {
+          if (item.name && item.path) {
+            alert("Received file" + item.name + " " + item.path);
+            id_array.current.splice(id_array.current.indexOf(item.id), 1);
+            console.log(response.data);
+            sessionStorage.setItem('id_array', id_array.current);
+          }
+        }
+      }).catch(error => console.log(error));
+    }
+  
+  	useEffect(() => {
+      setInterval(requestSpamer, 5000)
+    }, [])
+  
 
     useEffect(() => {
       console.log(sessionStorage);
@@ -42,19 +74,8 @@ export default function SearchFile (){
         })
         .then(response => {
             console.log(response);
-            /*
-            setFile_id(response.id);
-            if (sessionStorage.getItem('id_array') == undefined) {
-              sessionStorage.setItem('id_array', file_id);
-            } 
-            else{
-              id_array = sessionStorage.getItem('id_array')
-              id_array = id_array.push(file_id)
-              sessionStorage.setItem('id_array', id_array);
-            }
-            */
-
-              
+            id_array.current.push(response.id);
+      			sessionStorage.setItem('id_array', id_array.current);
         })
         .catch(error => console.log(error));
     
@@ -69,7 +90,7 @@ export default function SearchFile (){
   
                     <Form.Group className="formHorizontal">
                     <Form.Label  >
-                      IP
+                      File name
                     </Form.Label>
                       <Col >                      
                         <Input

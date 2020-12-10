@@ -62,7 +62,7 @@ function TableNodes() {
       );
     } else {
       //return( <Error flag={"wait"}/>);
-      return( <div> Error</div>);
+      return( <div></div>);
     }
 
 }
