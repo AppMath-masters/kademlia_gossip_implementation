@@ -1,7 +1,7 @@
 import logging
 import asyncio
 
-#from kademlia.network import Server
+from kademlia.network import Server
 import threading
 from queue import Queue 
 
@@ -23,7 +23,7 @@ log.setLevel(logging.DEBUG)
 
 
 loop = asyncio.get_event_loop()
-#server = Server()
+server = Server()
 
 """
 Client server
@@ -38,7 +38,7 @@ async def root_handler(request):
 async def connect_handler(request):
     data = await request.json()
     ip = data['ip']
-    port = data['port']
+    port = int(data['port'])
     address = (ip,port)
     await server.bootstrap(address)
     return web.Response(status=204)
@@ -53,7 +53,10 @@ async def search_handler(request):
     
     
 async def neighbors_handler(request):
-    res = server.get_all_neighbours()
+    neigbours = server.get_all_neighbours()
+    res = []
+    for val in neigbours.values():
+        res.append(val)
     #res = [{'id': '1', 'ip': '2', 'port': '3'} for i in range(3)]
     return web.Response(headers={'Content-Type': 'application/json'},
                         text=json.dumps(res))
@@ -126,4 +129,4 @@ def run_async_node_server():
     asyncio.run(node_server())
 
 
-#threading.Thread(target=run_async_node_server).start()
+threading.Thread(target=run_async_node_server).start()
