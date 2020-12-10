@@ -38,7 +38,7 @@ function TableFiles() {
     if(data != null) {
 
       if (data.length === 0){
-        return( <div>Error</div>);
+        return( <div><AddFileModal/></div>);
       }
 
       console.log(data)

@@ -110,8 +110,9 @@ async def content_handler(request):
     res = server.get_all_files()
     #res = [{'name': '1', 'path': '2'} for i in range(3)]
     return web.Response(headers={'Content-Type': 'application/json'},
-                        text=json.dumps(res))
-
+                       text=json.dumps(res))
+    
+    
 """
 Client server
 """

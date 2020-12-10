@@ -37,7 +37,7 @@ function TableNodes() {
     if(data != null) {
 
       if (data.length === 0){
-        return( <div>Error</div>);
+        return( <div></div>);
       }
 
       console.log(data)
