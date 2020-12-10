@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom';
 import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
+<script crossorigin src="..."></script>
 
 ReactDOM.render(
   <React.StrictMode>

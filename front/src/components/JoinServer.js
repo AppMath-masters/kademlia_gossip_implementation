@@ -50,7 +50,8 @@ export default function JoinServer (){
         })
         .then(response => {
             console.log(response);
-            if(response.data.success === "success") {
+            console.log(response.status)
+            if(response.status === 204) {
               window.location.reload();
             }
         })
