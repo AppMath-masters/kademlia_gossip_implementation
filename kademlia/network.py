@@ -120,19 +120,14 @@ class Server:
         if self.storage.get(dkey) is not None:
             return self.storage.get(dkey)
         node = Node(dkey)
-        neighbours = self.protocol.find_neighbors(node)
-        closer = []
-        my_distance = node.distance_to(self.node)
-        for neighbour in neighbours.values():
-            if neighbour.distance_to(node) < my_distance:
-                closer.append(neighbour)
+        closer = self.protocol.find_neighbours_closer_then_me(node)
 
         if not closer:
             log.warning("There are no known neighbors to get key %s", key)
             return None
 
         self.protocol.call_find(closer, key, request_id)
-
+        return request_id
 
     async def set(self, key, value):
         """
