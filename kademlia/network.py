@@ -6,9 +6,9 @@ import pickle
 import asyncio
 import logging
 
+from kademlia.file_data import FileData
 from kademlia.gossip_protocol import GossipProtocol
-storage = __import__('storage')
-gp = __import__('gp')
+from kademlia.storage import Storage
 from kademlia.utils import digest
 from kademlia.node import Node
 
@@ -36,7 +36,7 @@ class Server:
         """
         self.ksize = ksize
         self.alpha = alpha
-        self.storage = storage.Storage()
+        self.storage = Storage()
         self.node = Node(node_id or digest(random.getrandbits(255)))
         self.transport = None
         self.protocol = None
@@ -101,38 +101,47 @@ class Server:
         result = await self.protocol.ping(addr, self.node.id)
         return Node(result[1], addr[0], addr[1]) if result[0] else None
 
-    async def get(self, key):
+    async def get(self, name):
         """
         Get a key if the network has it.
         Returns:
             :class:`None` if not found, the value otherwise.
         """
-        log.info("Looking up key %s", key)
-        request_id = self.build_unique_code()
-        dkey = digest(key)
+        log.info("Looking up key %s", name)
+        request_id = str(Node(self.build_unique_code()).long_id)
+        dkey = digest(name)
         # if this node has it, return it
-        if self.storage.get(dkey) is not None:
-            return self.storage.get(dkey)
-        node = Node(dkey)
-        closer = self.protocol.find_neighbours_closer_then_me(node)
+        if self.storage.find_file(dkey):
+            self.protocol.history_of_find_file_request_ids_from_this_node[request_id] = \
+                FileData(request_id, name, self.storage.get_path(name))
+        else:
+            node = Node(dkey)
+            closer = self.protocol.find_neighbours_closer_then_me(node)
 
-        if not closer:
-            log.warning("There are no known neighbors to get key %s", key)
-            return None
+            if not closer:
+                log.warning("There are no known neighbors to get key %s", name)
+                return None
 
-        self.protocol.call_find(closer, key, request_id)
+            self.protocol.call_find(closer, dkey, request_id)
         return request_id
 
-    async def set(self, name, key, value):
+    def get_results_by_search_ids(self, ids):
+        return self.protocol.get_results_by_ids(ids)
+
+    def get_all_files(self):
+        return self.storage.get_all()
+
+    def get_all_neighbours(self):
+        return self.protocol.neighbours
+
+    async def set(self, name, path):
         """
         Set the given string key to the given value in the network.
         """
-        if not check_dht_value_type(value):
-            raise TypeError(
-                "Value must be of type int, float, bool, str, or bytes"
-            )
-        log.info("setting '%s' = '%s' on network", key, value)
-        dkey = digest(key)
+
+        log.info("Saving '%s' on network", name)
+        dkey = digest(name)
+        value = self.storage.upload(path)
         return await self.set_digest(name, dkey, value)
 
     async def set_digest(self, name, dkey, value):
@@ -148,13 +157,16 @@ class Server:
             return False
         neighbors = []
         for n in nearest:
-            if n.distance_to(node)<=self.node.distance_to(node):
+            if n.distance_to(node) <= self.node.distance_to(node):
                 neighbors.append(n)
 
+        if len(neighbors) == 0:
+            self.storage.download(name, value)
         for n in neighbors:
-            self.protocol.call_store(n,name,dkey,value)
+            await self.protocol.call_store(n, name, dkey, value)
+
         # return true only if at least one store call succeeded
-        #return any(await asyncio.gather(*results))
+        # return any(await asyncio.gather(*results))
 
     def save_state(self, fname):
         """
