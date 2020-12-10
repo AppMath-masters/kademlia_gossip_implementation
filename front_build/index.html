@@ -1,0 +1,77 @@
+<!doctype html>
+<head>
+  <meta charset="utf-8"/>
+  <script>
+    function testRequest() {
+	console.log('start')
+	/*
+	fetch('http://localhost:8471/connect', {
+		method: 'POST',
+		headers: {
+			'Content-Type': 'application/json'
+		},
+		body: JSON.stringify({
+			'ip': '127.0.0.1',
+			'port': '4890'
+		})
+	}).then((r) => {
+		console.log(r)
+	})
+
+	fetch('http://localhost:8471/search', {
+		method: 'POST',
+		headers: {
+			'Content-Type': 'application/json'
+		},
+		body: JSON.stringify({
+			'name': 'abcd'
+		})
+	}).then((r) => {
+		r.json().then(j => console.log(j))
+	})
+
+	fetch('http://localhost:8471/neighbors', {
+		method: 'POST',
+	}).then((r) => {
+		r.json().then(j => console.log(j))
+	})
+
+	fetch('http://localhost:8471/add', {
+		method: 'POST',
+		headers: {
+			'Content-Type': 'application/json'
+		},
+		body: JSON.stringify({
+			'name': 'abcd',
+			'path': 'qqqqqq'
+		})
+	}).then((r) => {
+		console.log(r)
+	})
+
+
+	fetch('http://localhost:8471/content', {
+		method: 'GET',
+	}).then((r) => {
+		r.json().then(j => console.log(j))
+	})
+	*/
+	fetch('http://localhost:8471/findresults', {
+		method: 'POST',
+		headers: {
+			'Content-Type': 'application/json'
+		},
+		body: JSON.stringify({
+			'ids': ['1', '2', '3']
+		})
+	}).then((r) => {
+		r.json().then(j => console.log(j))
+	})
+
+    }
+  </script>
+</head>
+<body>
+  <button onclick="testRequest()"> Test </button>
+</body>
+</html>
