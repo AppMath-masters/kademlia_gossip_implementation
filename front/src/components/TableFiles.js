@@ -61,7 +61,7 @@ function TableFiles() {
       );
     } else {
       //return( <Error flag={"wait"}/>);
-      return( <div> Error</div>);
+      return( <div><AddFileModal/></div>);
     }
 
 }
