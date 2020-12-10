@@ -39,25 +39,22 @@ async def connect_handler(request):
     data = await request.json()
     ip = data['ip']
     port = data['port']
-    """
-    """
+    address = (ip,port)
+    await server.bootstrap(address)
     return web.Response(status=204)
 
 
 async def search_handler(request):
     data = await request.json()
     name = data['name']
-    _id = 1
-    """
-    """
+    _id = await server.get(name)
     return web.Response(headers={'Content-Type': 'application/json'},
                         text=json.dumps({'id': str(_id)}))
     
     
 async def neighbors_handler(request):
-    """
-    """
-    res = [{'id': '1', 'ip': '2', 'port': '3'} for i in range(3)]
+    res = server.get_all_neighbours()
+    #res = [{'id': '1', 'ip': '2', 'port': '3'} for i in range(3)]
     return web.Response(headers={'Content-Type': 'application/json'},
                         text=json.dumps(res))
 
@@ -67,28 +64,23 @@ async def add_handler(request):
     name = data['name']
     path = data['path']
     await server.set(name, path)
-    """
-    """
     return web.Response()
 
 
 async def find_results_handler(request):
     data = await request.json()
     ids = data['ids']
-    """
-    """
-    res = [{'id': '1', 'name': '2', 'path': '3'} for i in range(3)]
+    res = server.get_results_by_search_ids(ids)
+    #res = [{'id': '1', 'name': '2', 'path': '3'} for i in range(3)]
     return web.Response(headers={'Content-Type': 'application/json'},
                         text=json.dumps(res))
 
 
 async def content_handler(request):
-    """
-    """
-    res = [{'name': '1', 'path': '2'} for i in range(3)]
+    res = server.get_all_files()
+    #res = [{'name': '1', 'path': '2'} for i in range(3)]
     return web.Response(headers={'Content-Type': 'application/json'},
                         text=json.dumps(res))
-
 
 """
 Client server
