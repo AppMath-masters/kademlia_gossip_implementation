@@ -1,94 +1,60 @@
 import time
-from itertools import takewhile
-import operator
-from collections import OrderedDict
-from abc import abstractmethod, ABC
+import tkinter as tk
+from tkinter import filedialog
+import os
+import base64
+import hashlib
 
+class Storage():
 
-class IStorage(ABC):
-    """
-    Local storage for this node.
-    IStorage implementations of get must return the same type as put in by set
-    """
+    def digest(self,string):
+        if not isinstance(string, bytes):
+            string = str(string).encode('utf8')
+        return hashlib.sha1(string).digest()
 
-    @abstractmethod
-    def __setitem__(self, key, value):
-        """
-        Set a key to the given value.
-        """
+    def upload(self):
+        file_path = filedialog.askopenfilename()
+        print(file_path)
+        with open(file_path, "rb") as in_file:
+            out_file = base64.b64encode(in_file.read())
+        return out_file
 
-    @abstractmethod
-    def __getitem__(self, key):
-        """
-        Get the given key.  If item doesn't exist, raises C{KeyError}
-        """
+    def download(self,name,data):
+        path = os.getcwd()
+        try:
+            os.mkdir(path+"/Storage")
+        except OSError:
+            new_data = base64.b64decode(data)
+            if '.txt' in name:
+                file1 = open(path+"/Storage/"+name, "w")
+                file1.write(new_data.decode("utf-8"))
+            else:
+                file1 = open(path+"/Storage/"+name, "wb")
+                file1.write(new_data)
+            file1.close()
+        else:
+            new_data = base64.b64decode(data)
+            if '.txt' in name:
+                file1 = open(path+"/Storage/"+name, "w")
+                file1.write(new_data.decode("utf-8"))
+            else:
+                file1 = open(path+"/Storage/"+name, "wb")
+                file1.write(new_data)
+            file1.close()
 
-    @abstractmethod
-    def get(self, key, default=None):
-        """
-        Get given key.  If not found, return default.
-        """
+    def find_file(self,key):
+        mypath = os.getcwd()+"/Storage/"
+        files = [f for f in os.listdir(mypath) if os.path.isfile(os.path.join(mypath, f))]
+        for f in files:
+            if self.digest(f)==key:
+                return True
+        return False
 
-    @abstractmethod
-    def iter_older_than(self, seconds_old):
-        """
-        Return the an iterator over (key, value) tuples for items older
-        than the given secondsOld.
-        """
-
-    @abstractmethod
-    def __iter__(self):
-        """
-        Get the iterator for this storage, should yield tuple of (key, value)
-        """
-
-
-class ForgetfulStorage(IStorage):
-    def __init__(self, ttl=604800):
-        """
-        By default, max age is a week.
-        """
-        self.data = OrderedDict()
-        self.ttl = ttl
-
-    def __setitem__(self, key, value):
-        if key in self.data:
-            del self.data[key]
-        self.data[key] = (time.monotonic(), value)
-        self.cull()
-
-    def cull(self):
-        for _, _ in self.iter_older_than(self.ttl):
-            self.data.popitem(last=False)
-
-    def get(self, key, default=None):
-        self.cull()
-        if key in self.data:
-            return self[key]
-        return default
-
-    def __getitem__(self, key):
-        self.cull()
-        return self.data[key][1]
-
-    def __repr__(self):
-        self.cull()
-        return repr(self.data)
-
-    def iter_older_than(self, seconds_old):
-        min_birthday = time.monotonic() - seconds_old
-        zipped = self._triple_iter()
-        matches = takewhile(lambda r: min_birthday >= r[1], zipped)
-        return list(map(operator.itemgetter(0, 2), matches))
-
-    def _triple_iter(self):
-        ikeys = self.data.keys()
-        ibirthday = map(operator.itemgetter(0), self.data.values())
-        ivalues = map(operator.itemgetter(1), self.data.values())
-        return zip(ikeys, ibirthday, ivalues)
-
-    def __iter__(self):
-        self.cull()
-        ikeys = self.data.keys()
-        ivalues = map(operator.itemgetter(1), self.data.values())
-        return zip(ikeys, ivalues)
+    def get_all(self):
+        path = os.getcwd()+"/Storage/"
+        files = [f for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]
+        dfiles = []
+        for f in files:
+            dfiles.append({"name":f,"path":path+f})
+        return dfiles
+            

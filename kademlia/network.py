@@ -7,11 +7,10 @@ import asyncio
 import logging
 
 from kademlia.gossip_protocol import GossipProtocol
+storage = __import__('storage')
+gp = __import__('gp')
 from kademlia.utils import digest
-from kademlia.storage import ForgetfulStorage
 from kademlia.node import Node
-from kademlia.crawling import ValueSpiderCrawl
-from kademlia.crawling import NodeSpiderCrawl
 
 log = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
@@ -28,7 +27,6 @@ class Server:
     def __init__(self, ksize=20, alpha=3, node_id=None, storage=None):
         """
         Create a server instance.  This will start listening on the given port.
-
         Args:
             ksize (int): The k parameter from the paper
             alpha (int): The alpha parameter from the paper
@@ -38,7 +36,7 @@ class Server:
         """
         self.ksize = ksize
         self.alpha = alpha
-        self.storage = storage or ForgetfulStorage()
+        self.storage = storage.Storage()
         self.node = Node(node_id or digest(random.getrandbits(255)))
         self.transport = None
         self.protocol = None
@@ -61,7 +59,6 @@ class Server:
     async def listen(self, port, interface='0.0.0.0'):
         """
         Start listening on the given port.
-
         Provide interface="::" to accept ipv6 address
         """
         loop = asyncio.get_event_loop()
@@ -75,7 +72,6 @@ class Server:
         """
         Get a :class:`list` of (ip, port) :class:`tuple` pairs suitable for
         use as an argument to the bootstrap method.
-
         The server should have been bootstrapped
         already - this is just a utility for getting some neighbors and then
         storing them if this server is going down for a while.  When it comes
@@ -90,7 +86,6 @@ class Server:
     async def bootstrap(self, address):
         """
         Bootstrap the server by connecting to other known nodes in the network.
-
         Args:
             addrs: (ip, port) `tuple` pair.  Note that only IP
                    addresses are acceptable - hostnames will cause an error.
@@ -109,7 +104,6 @@ class Server:
     async def get(self, key):
         """
         Get a key if the network has it.
-
         Returns:
             :class:`None` if not found, the value otherwise.
         """
@@ -129,7 +123,7 @@ class Server:
         self.protocol.call_find(closer, key, request_id)
         return request_id
 
-    async def set(self, key, value):
+    async def set(self, name, key, value):
         """
         Set the given string key to the given value in the network.
         """
@@ -139,33 +133,28 @@ class Server:
             )
         log.info("setting '%s' = '%s' on network", key, value)
         dkey = digest(key)
-        return await self.set_digest(dkey, value)
+        return await self.set_digest(name, dkey, value)
 
-    async def set_digest(self, dkey, value):
+    async def set_digest(self, name, dkey, value):
         """
         Set the given SHA1 digest key (bytes) to the given value in the
         network.
         """
         node = Node(dkey)
 
-        nearest = self.protocol.router.find_neighbors(node)
+        nearest = self.protocol.find_neighbors(node)
         if not nearest:
-            log.warning("There are no known neighbors to set key %s",
-                        dkey.hex())
+            log.warning("There are no known neighbors to set key %s", dkey.hex())
             return False
+        neighbors = []
+        for n in nearest:
+            if n.distance_to(node)<=self.node.distance_to(node):
+                neighbors.append(n)
 
-        spider = NodeSpiderCrawl(self.protocol, node, nearest,
-                                 self.ksize, self.alpha)
-        nodes = await spider.find()
-        log.info("setting '%s' on %s", dkey.hex(), list(map(str, nodes)))
-
-        # if this node is close too, then store here as well
-        biggest = max([n.distance_to(node) for n in nodes])
-        if self.node.distance_to(node) < biggest:
-            self.storage[dkey] = value
-        results = [self.protocol.call_store(n, dkey, value) for n in nodes]
+        for n in neighbors:
+            self.protocol.call_store(n,name,dkey,value)
         # return true only if at least one store call succeeded
-        return any(await asyncio.gather(*results))
+        #return any(await asyncio.gather(*results))
 
     def save_state(self, fname):
         """
@@ -205,7 +194,6 @@ class Server:
         """
         Save the state of node with a given regularity to the given
         filename.
-
         Args:
             fname: File name to save retularly to
             frequency: Frequency in seconds that the state should be saved.

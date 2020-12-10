@@ -23,7 +23,8 @@ class GossipProtocol(RPCProtocol):
         self.history_of_find_file_request_ids = dict()
         self.history_of_find_file_request_ids_from_this_node = dict()
 
-    async def call_connect(self, address, request_id):
+
+async def call_connect(self, address, request_id):
         self.connect(address, self.source_node.id,
                      self.source_node.id, request_id, 0)
 
@@ -100,6 +101,8 @@ class GossipProtocol(RPCProtocol):
         node = Node(key)
         neighbors = self.router.find_neighbors(node, exclude=source)
         return list(map(tuple, neighbors))
+
+
 
     async def call_ping(self, node_to_ask):
         address = (node_to_ask.ip, node_to_ask.port)
