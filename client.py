@@ -99,7 +99,7 @@ async def client_server():
     app.add_routes([web.get('/', root_handler),
                     web.post('/connect', connect_handler),
                     web.post('/search', search_handler),
-                    web.post('/neighbors', neighbors_handler),
+                    web.get('/neighbors', neighbors_handler),
                     web.post('/add', add_handler),
                     web.get('/content', content_handler),
                     web.post('/findresults', find_results_handler)
