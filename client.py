@@ -1,7 +1,7 @@
 import logging
 import asyncio
 
-from kademlia.network import Server
+#from kademlia.network import Server
 import threading
 from queue import Queue 
 
@@ -23,7 +23,7 @@ log.setLevel(logging.DEBUG)
 
 
 loop = asyncio.get_event_loop()
-server = Server()
+#server = Server()
 
 """
 Client server
@@ -92,7 +92,7 @@ async def client_server():
     app.add_routes([web.get('/', root_handler),
                     web.post('/connect', connect_handler),
                     web.post('/search', search_handler),
-                    web.post('/neighbors', neighbors_handler),
+                    web.get('/neighbors', neighbors_handler),
                     web.post('/add', add_handler),
                     web.get('/content', content_handler),
                     web.post('/findresults', find_results_handler)
@@ -126,4 +126,4 @@ def run_async_node_server():
     asyncio.run(node_server())
 
 
-threading.Thread(target=run_async_node_server).start()
+#threading.Thread(target=run_async_node_server).start()
