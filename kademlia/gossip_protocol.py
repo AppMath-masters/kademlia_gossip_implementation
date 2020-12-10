@@ -82,6 +82,7 @@ class GossipProtocol(RPCProtocol):
         return sender
 
     def rpc_ping(self, sender, nodeid):
+        print(self.source_node.id)
         return self.source_node.id
 
     def get_results_by_ids(self, ids):

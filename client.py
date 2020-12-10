@@ -1,6 +1,6 @@
 import logging
 import asyncio
-
+import time
 from kademlia.network import Server
 import threading
 from queue import Queue 
@@ -25,6 +25,33 @@ log.setLevel(logging.DEBUG)
 loop = asyncio.get_event_loop()
 server = Server()
 
+"""
+Kademlia server
+"""
+
+wait = True
+def node_server():
+    loop.set_debug(True)
+
+    loop.run_until_complete(server.listen(_node_port))
+    global wait
+    wait = False
+    try:
+        loop.run_forever()
+    except KeyboardInterrupt:
+        pass
+    finally:
+        server.stop()
+        loop.close()
+
+
+def run_async_node_server():
+    node_server()
+
+
+threading.Thread(target=run_async_node_server).start()
+while wait:
+    time.sleep(1)
 """
 Client server
 """
@@ -114,19 +141,3 @@ def run_async_client_server():
 threading.Thread(target=run_async_client_server).start()
 
 
-"""
-Kademlia server
-"""
-async def node_server():
-    loop.set_debug(True)
-
-    await server.listen(_node_port)
-    
-    while True:
-        pass
-
-def run_async_node_server():
-    asyncio.run(node_server())
-
-
-threading.Thread(target=run_async_node_server).start()
